@@ -1,0 +1,5 @@
+# Main Application Versions
+i2pd-exporter-v2.0.4
+# Rust/Cargo Dependencies
+# Build Dependencies (Alpine Latest)
+# Only critical build/runtime deps: rust, cargo, openssl-dev, pkgconf, libgcc
