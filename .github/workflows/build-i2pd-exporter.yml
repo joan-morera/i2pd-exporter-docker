@@ -19,21 +19,12 @@ jobs:
         uses: actions/checkout@v4
       - name: Set up Docker
         uses: docker/setup-docker-action@v4
-      - name: Pull base image and upgrade to check for changes
+      - name: Check package versions
         run: |
           docker pull alpine:latest
-          echo "FROM alpine:latest" > Dockerfile.temp
-          echo "RUN apk update && apk upgrade && apk add --no-cache \\" >> Dockerfile.temp
-          echo "    build-base \\" >> Dockerfile.temp
-          echo "    git \\" >> Dockerfile.temp
-          echo "    rust \\" >> Dockerfile.temp
-          echo "    cargo \\" >> Dockerfile.temp
-          echo "    openssl-dev \\" >> Dockerfile.temp
-          echo "    pkgconf" >> Dockerfile.temp
-          docker build -f Dockerfile.temp -t temp-check-image .
-          # Filter only relevant build/runtime packages: rust, cargo, openssl-dev, pkgconf, libgcc
-          docker run --rm temp-check-image sh -c "apk info -v | grep -E '^(rust|cargo|openssl-dev|pkgconf|libgcc)-' | sort" > current-packages.txt
-          rm Dockerfile.temp
+          docker run --rm alpine:latest sh -c "apk update >/dev/null && apk add --simulate build-base git rust cargo openssl-dev pkgconf" | \
+          sed -n 's/^.* Installing \([^ ]*\) (\([^)]*\)).*/\1-\2/p' | \
+          grep -E '^(rust|cargo|openssl-dev|pkgconf|libgcc)-' | sort > current-packages.txt
       - name: Compare with stored package list
         id: check_changes
         run: |
@@ -145,22 +136,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Update version and package files and commit
         run: |
-          if [ "${{ needs.check-base-packages.outputs.changed }}" = "true" ]; then
-            echo "FROM alpine:latest" > Dockerfile.temp
-            echo "RUN apk update && apk upgrade && apk add --no-cache \\" >> Dockerfile.temp
-            echo "    build-base \\" >> Dockerfile.temp
-            echo "    git \\" >> Dockerfile.temp
-            echo "    rust \\" >> Dockerfile.temp
-            echo "    cargo \\" >> Dockerfile.temp
-            echo "    openssl-dev \\" >> Dockerfile.temp
-            echo "    pkgconf" >> Dockerfile.temp
-            docker build -f Dockerfile.temp -t temp-check-image-commit .
-            # Filter matches the check step
-            docker run --rm temp-check-image-commit sh -c "apk info -v | grep -E '^(rust|cargo|openssl-dev|pkgconf|libgcc)-' | sort" > packages-temp.txt
-            rm Dockerfile.temp
-            docker rmi -f temp-check-image-commit
-          fi
-
           LATEST_APP="${{ needs.check-versions.outputs.latest_tag }}"
           
           echo "# Main Application Versions" > package-versions.txt
@@ -169,20 +144,10 @@ jobs:
           echo "# Build Dependencies (Alpine Latest)" >> package-versions.txt
           echo "# Only critical build/runtime deps: rust, cargo, openssl-dev, pkgconf, libgcc" >> package-versions.txt
           
-          # If changed, use new list, else reuse filtered old info (or fetch again if tricky, but here we can just rebuild the list logic safely)
-          if [ "${{ needs.check-base-packages.outputs.changed }}" = "true" ]; then
-            cat packages-temp.txt >> package-versions.txt
-            rm packages-temp.txt
-          else
-            # Extract old package list if valid or just rebuild it to be safe? 
-            # Safest is to just re-run the fetch in this block to ensure freshness if we are here due to app version update only
-            echo "FROM alpine:latest" > Dockerfile.temp
-            echo "RUN apk update && apk upgrade && apk add --no-cache build-base git rust cargo openssl-dev pkgconf" >> Dockerfile.temp
-            docker build -f Dockerfile.temp -t temp-check-image-update .
-            docker run --rm temp-check-image-update sh -c "apk info -v | grep -E '^(rust|cargo|openssl-dev|pkgconf|libgcc)-' | sort" >> package-versions.txt
-            rm Dockerfile.temp
-            docker rmi -f temp-check-image-update
-          fi
+          # Use optimized check to get current package versions
+          docker run --rm alpine:latest sh -c "apk update >/dev/null && apk add --simulate build-base git rust cargo openssl-dev pkgconf" | \
+          sed -n 's/^.* Installing \([^ ]*\) (\([^)]*\)).*/\1-\2/p' | \
+          grep -E '^(rust|cargo|openssl-dev|pkgconf|libgcc)-' | sort >> package-versions.txt
           
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
