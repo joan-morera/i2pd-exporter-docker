@@ -9,6 +9,9 @@ A minimal and self-updating Docker container for [i2pd-exporter](https://github.
 - **Size**: ~5MB (uncompressed)
 - **User**: `exporter` (running as non-root)
 
+> [!WARNING]
+> This image is built FROM `scratch`. It contains **no shell** (`/bin/sh`, `/bin/bash`) and no system utilities. You cannot `docker exec` into it. Debugging must be done via logs.
+
 ## Dependency Tracking & Upgrade Policy
 
 This repository uses an automated CI/CD pipeline that runs daily to ensure the container is always up-to-date with the latest updates.
