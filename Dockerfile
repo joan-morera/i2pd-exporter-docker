@@ -15,7 +15,7 @@ RUN wget "https://github.com/Jercik/i2pd-exporter/archive/refs/tags/${APP_VERSIO
     tar xvfz app.tar.gz && \
     cd i2pd-exporter-$(echo $APP_VERSION | sed 's/v//') && \
     # Compile statically
-    cargo rustc --release -- -C target-feature=+crt-static && \
+    cargo rustc --release --bin i2pd-exporter -- -C target-feature=+crt-static && \
     strip target/release/i2pd-exporter && \
     cp target/release/i2pd-exporter /i2pd-exporter
 
