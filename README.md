@@ -6,7 +6,7 @@ A minimal and self-updating Docker container for [i2pd-exporter](https://github.
 
 - **Base Image**: `scratch`
 - **Architecture**: `amd64`, `arm64`
-- **Size**: ~5MB (uncompressed)
+- **Size**: ~2MB (uncompressed)
 - **User**: `exporter` (running as non-root)
 
 > [!WARNING]
