@@ -22,9 +22,9 @@ jobs:
       - name: Check package versions
         run: |
           docker pull alpine:latest
-          docker run --rm alpine:latest sh -c "apk update >/dev/null && apk add --simulate build-base git rust cargo openssl-dev pkgconf" | \
+          docker run --rm alpine:latest sh -c "apk update >/dev/null && apk add --simulate build-base git rust cargo" | \
           sed -n 's/^.* Installing \([^ ]*\) (\([^)]*\)).*/\1-\2/p' | \
-          grep -E '^(rust|cargo|openssl-dev|pkgconf|libgcc)-' | sort > current-packages.txt
+          grep -E '^(rust|cargo)-' | sort > current-packages.txt
       - name: Compare with stored package list
         id: check_changes
         run: |
@@ -142,12 +142,12 @@ jobs:
           echo "i2pd-exporter-${LATEST_APP}" >> package-versions.txt
           
           echo "# Build Dependencies (Alpine Latest)" >> package-versions.txt
-          echo "# Only critical build/runtime deps: rust, cargo, openssl-dev, pkgconf, libgcc" >> package-versions.txt
+          echo "# Only critical build deps: rust, cargo" >> package-versions.txt
           
           # Use optimized check to get current package versions
-          docker run --rm alpine:latest sh -c "apk update >/dev/null && apk add --simulate build-base git rust cargo openssl-dev pkgconf" | \
+          docker run --rm alpine:latest sh -c "apk update >/dev/null && apk add --simulate build-base git rust cargo" | \
           sed -n 's/^.* Installing \([^ ]*\) (\([^)]*\)).*/\1-\2/p' | \
-          grep -E '^(rust|cargo|openssl-dev|pkgconf|libgcc)-' | sort >> package-versions.txt
+          grep -E '^(rust|cargo)-' | sort >> package-versions.txt
           
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'

@@ -6,9 +6,7 @@ RUN apk add --no-cache \
     git \
     rust \
     cargo \
-    openssl-dev \
-    openssl-libs-static \
-    pkgconf
+    ca-certificates
 
 ARG APP_VERSION
 
@@ -17,24 +15,28 @@ RUN wget "https://github.com/Jercik/i2pd-exporter/archive/refs/tags/${APP_VERSIO
     tar xvfz app.tar.gz && \
     cd i2pd-exporter-$(echo $APP_VERSION | sed 's/v//') && \
     # Compile statically
-    OPENSSL_STATIC=1 cargo build --release && \
+    RUSTFLAGS="-C target-feature=+crt-static" cargo build --release && \
     strip target/release/i2pd-exporter && \
     cp target/release/i2pd-exporter /i2pd-exporter
 
+# Create user files
+RUN echo "exporter:x:1000:1000:exporter:/:" > /etc/passwd_exporter && \
+    echo "exporter:x:1000:" > /etc/group_exporter
+
 # Final Stage
-FROM alpine:latest
+FROM scratch
 LABEL maintainer="JoanMorera"
 
-# Install runtime dependencies
-RUN apk add --no-cache ca-certificates libgcc
+# Copy user configuration
+COPY --from=builder /etc/passwd_exporter /etc/passwd
+COPY --from=builder /etc/group_exporter /etc/group
 
-# Create user
-RUN adduser -S -D -H -h /app exporter
+# Copy certificates for HTTPS (reqwest)
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Copy artifacts
-COPY --from=builder /i2pd-exporter /usr/bin/i2pd-exporter
-
+COPY --from=builder /i2pd-exporter /i2pd-exporter
 
 USER exporter
 
-ENTRYPOINT ["/usr/bin/i2pd-exporter"]
+ENTRYPOINT ["/i2pd-exporter"]

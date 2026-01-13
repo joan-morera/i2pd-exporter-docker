@@ -4,9 +4,9 @@ A minimal and self-updating Docker container for [i2pd-exporter](https://github.
 
 ## Container Specifications
 
-- **Base Image**: `alpine:latest`
+- **Base Image**: `scratch`
 - **Architecture**: `amd64`, `arm64`
-- **Size**: ~13MB (uncompressed)
+- **Size**: ~5MB (uncompressed)
 - **User**: `exporter` (running as non-root)
 
 ## Dependency Tracking & Upgrade Policy
@@ -15,12 +15,9 @@ This repository uses an automated CI/CD pipeline that runs daily to ensure the c
 
 ### Tracking Logic
 - **Application Version**: Builds over the latest release tag of [Jercik/i2pd-exporter](https://github.com/Jercik/i2pd-exporter).
-- **Base System**: Tracks updates for critical Alpine packages only:
+- **Base System**: Tracks updates for critical build packages only:
   - `rust`
   - `cargo`
-  - `openssl-dev`
-  - `pkgconf`
-  - `libgcc`
 
 If any of these components change, the image is automatically rebuilt and pushed.
 
